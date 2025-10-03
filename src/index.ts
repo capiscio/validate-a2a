@@ -56,65 +56,87 @@ async function run(): Promise<void> {
     core.info(`🔍 Running: capiscio ${args.join(' ')}`);
     const exitCode = await exec.exec('capiscio', args, options);
 
+    // Log raw output for debugging
+    if (output) {
+      core.debug(`CLI Output: ${output}`);
+    }
+    if (errorOutput) {
+      core.debug(`CLI Error Output: ${errorOutput}`);
+    }
+
     // Parse JSON output
     let result: ValidationResult;
     try {
       result = JSON.parse(output);
     } catch (error) {
-      core.setFailed(`Failed to parse validation output: ${output}`);
+      // If JSON parsing fails, show the raw output
+      core.error('Failed to parse validation output as JSON');
+      core.error(`Raw output: ${output}`);
+      core.error(`Error output: ${errorOutput}`);
+      core.setFailed(`Validation failed with exit code ${exitCode}`);
       return;
     }
 
-    // Set outputs
+    // Set basic outputs
     core.setOutput('result', result.valid ? 'passed' : 'failed');
-    core.setOutput('error-count', result.errors.length.toString());
-    core.setOutput('warning-count', result.warnings.length.toString());
+    core.setOutput('error-count', (result.errors?.length || 0).toString());
+    core.setOutput('warning-count', (result.warnings?.length || 0).toString());
 
+    // Set scoring outputs (handle undefined gracefully)
     if (result.scoringResult) {
-      core.setOutput('compliance-score', result.scoringResult.compliance.score.toString());
-      core.setOutput('trust-score', result.scoringResult.trust.score.toString());
+      core.setOutput('compliance-score', result.scoringResult.compliance?.score?.toString() || '0');
+      core.setOutput('trust-score', result.scoringResult.trust?.score?.toString() || '0');
       core.setOutput(
         'availability-score',
-        result.scoringResult.availability 
-          ? result.scoringResult.availability.score.toString() 
-          : 'not-tested'
+        result.scoringResult.availability?.score?.toString() || 'not-tested'
       );
-      core.setOutput('production-ready', result.scoringResult.productionReady.toString());
+      core.setOutput('production-ready', (result.scoringResult.productionReady || false).toString());
 
       // Display scores
       core.info('');
       core.info('📊 Quality Scores:');
-      core.info(`  Compliance: ${result.scoringResult.compliance.score}/100 (${result.scoringResult.compliance.rating})`);
-      core.info(`  Trust: ${result.scoringResult.trust.score}/100 (${result.scoringResult.trust.rating})`);
+      if (result.scoringResult.compliance) {
+        core.info(`  Compliance: ${result.scoringResult.compliance.score}/100 (${result.scoringResult.compliance.rating})`);
+      }
+      if (result.scoringResult.trust) {
+        core.info(`  Trust: ${result.scoringResult.trust.score}/100 (${result.scoringResult.trust.rating})`);
+      }
       if (result.scoringResult.availability) {
         core.info(`  Availability: ${result.scoringResult.availability.score}/100 (${result.scoringResult.availability.rating})`);
       }
       core.info('');
       core.info(`🎯 Production Ready: ${result.scoringResult.productionReady ? '✅ YES' : '❌ NO'}`);
+    } else {
+      // No scoring result available
+      core.setOutput('compliance-score', 'N/A');
+      core.setOutput('trust-score', 'N/A');
+      core.setOutput('availability-score', 'N/A');
+      core.setOutput('production-ready', 'false');
     }
 
     // Display errors
-    if (result.errors.length > 0) {
+    if (result.errors && result.errors.length > 0) {
       core.info('');
       core.error(`❌ Found ${result.errors.length} error(s):`);
       result.errors.forEach((err: any) => {
-        core.error(`  - ${err.message}`);
+        core.error(`  - ${err.message || err}`);
       });
     }
 
     // Display warnings
-    if (result.warnings.length > 0) {
+    if (result.warnings && result.warnings.length > 0) {
       core.info('');
       core.warning(`⚠️  Found ${result.warnings.length} warning(s):`);
       result.warnings.forEach((warn: any) => {
-        core.warning(`  - ${warn.message}`);
+        core.warning(`  - ${warn.message || warn}`);
       });
     }
 
     // Determine if action should fail
     if (!result.valid) {
-      core.setFailed(`Validation failed with ${result.errors.length} error(s)`);
-    } else if (failOnWarnings && result.warnings.length > 0) {
+      const errorCount = result.errors?.length || 0;
+      core.setFailed(`Validation failed with ${errorCount} error(s)`);
+    } else if (failOnWarnings && result.warnings && result.warnings.length > 0) {
       core.setFailed(`Validation passed but found ${result.warnings.length} warning(s) (fail-on-warnings enabled)`);
     } else {
       core.info('');
