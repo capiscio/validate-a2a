@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.1.0] - 2025-11-21
 
 ### Changed
-- **Core Migration**: Migrated from legacy Node.js CLI (`capiscio-cli`) to high-performance Go binary (`capiscio-core`).
+- **Core Migration**: Migrated from legacy Node.js CLI (`capiscio-cli`) to high-performance Go binary (`capiscio-core` v1.0.2).
 - **Performance**: Removed `npm install -g` step, significantly reducing action startup time.
 - **Platform Support**: Added native support for Linux, macOS, and Windows runners (AMD64/ARM64).
 - **License**: Changed license from MIT to Apache-2.0 to align with the CapiscIO ecosystem.
