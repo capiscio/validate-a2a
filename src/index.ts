@@ -1,5 +1,11 @@
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
+import * as tc from '@actions/tool-cache';
+import * as os from 'os';
+import * as path from 'path';
+import * as fs from 'fs';
+
+const CAPISCIO_VERSION = '2.1.2';
 
 interface ValidationResult {
   success: boolean;
@@ -11,6 +17,41 @@ interface ValidationResult {
     availability: { total: number | null; rating: string | null } | null;
     productionReady?: boolean;
   };
+}
+
+async function setupCapiscio(): Promise<string> {
+  // Determine OS and Arch
+  const platform = os.platform();
+  const arch = os.arch();
+
+  let osName = '';
+  if (platform === 'linux') osName = 'linux';
+  else if (platform === 'darwin') osName = 'darwin';
+  else if (platform === 'win32') osName = 'windows';
+  else throw new Error(`Unsupported platform: ${platform}`);
+
+  let archName = '';
+  if (arch === 'x64') archName = 'amd64';
+  else if (arch === 'arm64') archName = 'arm64';
+  else throw new Error(`Unsupported architecture: ${arch}`);
+
+  const binaryName = platform === 'win32' ? `capiscio-${osName}-${archName}.exe` : `capiscio-${osName}-${archName}`;
+  const downloadUrl = `https://github.com/capiscio/capiscio-core/releases/download/v${CAPISCIO_VERSION}/${binaryName}`;
+
+  core.info(`⬇️ Downloading CapiscIO Core v${CAPISCIO_VERSION} from ${downloadUrl}`);
+
+  // Download
+  const downloadPath = await tc.downloadTool(downloadUrl);
+  
+  // Rename and make executable
+  const binPath = path.join(path.dirname(downloadPath), platform === 'win32' ? 'capiscio.exe' : 'capiscio');
+  fs.renameSync(downloadPath, binPath);
+  fs.chmodSync(binPath, '755');
+
+  // Add to PATH
+  core.addPath(path.dirname(binPath));
+  
+  return binPath;
 }
 
 async function run(): Promise<void> {
@@ -25,9 +66,8 @@ async function run(): Promise<void> {
 
     core.info(`🚀 Validating A2A agent card: ${agentCard}`);
 
-    // Install capiscio-cli globally
-    core.info('📦 Installing capiscio-cli@2.0.0...');
-    await exec.exec('npm', ['install', '-g', 'capiscio-cli@2.0.0']);
+    // Install capiscio-core
+    await setupCapiscio();
 
     // Build command arguments
     const args = ['validate', agentCard, '--json'];
