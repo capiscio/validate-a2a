@@ -12,9 +12,20 @@ interface ValidationResult {
   errors: any[];
   warnings: any[];
   scoringResult?: {
-    compliance: { total: number; rating: string };
-    trust: { total: number; rating: string };
-    availability: { total: number | null; rating: string | null } | null;
+    // Support both legacy and new output formats
+    compliance?: { total: number; rating: string };
+    complianceScore?: number;
+    
+    trust?: { total: number; rating: string };
+    trustScore?: number;
+    
+    availability?: { 
+      total?: number | null; 
+      rating?: string | null;
+      score?: number;
+      tested?: boolean;
+    } | null;
+    
     productionReady?: boolean;
   };
 }
@@ -75,7 +86,11 @@ async function run(): Promise<void> {
     if (strict) args.push('--strict');
     if (testLive) args.push('--test-live');
     if (skipSignature) args.push('--skip-signature');
-    if (timeout) args.push('--timeout', timeout);
+    if (timeout) {
+      // Ensure timeout has units (default to ms if just a number)
+      const timeoutVal = /^\d+$/.test(timeout) ? `${timeout}ms` : timeout;
+      args.push('--timeout', timeoutVal);
+    }
 
     // Run validation
     let output = '';
@@ -124,34 +139,59 @@ async function run(): Promise<void> {
 
     // Set scoring outputs (handle undefined gracefully)
     if (result.scoringResult) {
-      core.setOutput('compliance-score', result.scoringResult.compliance?.total?.toString() || '0');
-      core.setOutput('trust-score', result.scoringResult.trust?.total?.toString() || '0');
-      core.setOutput(
-        'availability-score',
-        result.scoringResult.availability?.total?.toString() || 'not-tested'
-      );
-      core.setOutput('production-ready', (result.scoringResult.productionReady || false).toString());
+      // Normalize scores from different versions
+      const complianceScore = result.scoringResult.compliance?.total ?? result.scoringResult.complianceScore ?? 0;
+      const trustScore = result.scoringResult.trust?.total ?? result.scoringResult.trustScore ?? 0;
+      
+      let availabilityScore: number | string = 'not-tested';
+      if (result.scoringResult.availability) {
+        if (result.scoringResult.availability.total !== undefined && result.scoringResult.availability.total !== null) {
+          availabilityScore = result.scoringResult.availability.total;
+        } else if (result.scoringResult.availability.score !== undefined) {
+          // Check if tested is false
+          if (result.scoringResult.availability.tested === false) {
+            availabilityScore = 'not-tested';
+          } else {
+            availabilityScore = result.scoringResult.availability.score;
+          }
+        }
+      }
+
+      // Calculate production ready if missing (simple heuristic: compliance >= 80)
+      const productionReady = result.scoringResult.productionReady ?? (complianceScore >= 80);
+
+      core.setOutput('compliance-score', complianceScore.toString());
+      core.setOutput('trust-score', trustScore.toString());
+      core.setOutput('availability-score', availabilityScore.toString());
+      core.setOutput('production-ready', productionReady.toString());
 
       // Display scores
       core.info('');
       core.info('📊 Quality Scores:');
-      if (result.scoringResult.compliance) {
-        const compScore = result.scoringResult.compliance.total;
-        const compRating = result.scoringResult.compliance.rating;
-        core.info(`  Compliance: ${compScore}/100 (${compRating})`);
+      
+      const getRating = (score: number) => {
+        if (score >= 90) return 'Excellent';
+        if (score >= 80) return 'Good';
+        if (score >= 70) return 'Fair';
+        return 'Needs Improvement';
+      };
+
+      const compRating = result.scoringResult.compliance?.rating ?? getRating(complianceScore);
+      core.info(`  Compliance: ${complianceScore}/100 (${compRating})`);
+
+      const trustRating = result.scoringResult.trust?.rating ?? getRating(trustScore);
+      core.info(`  Trust: ${trustScore}/100 (${trustRating})`);
+
+      if (availabilityScore !== 'not-tested') {
+        const availScoreNum = Number(availabilityScore);
+        const availRating = result.scoringResult.availability?.rating ?? getRating(availScoreNum);
+        core.info(`  Availability: ${availScoreNum}/100 (${availRating})`);
+      } else {
+        core.info(`  Availability: Not Tested`);
       }
-      if (result.scoringResult.trust) {
-        const trustScore = result.scoringResult.trust.total;
-        const trustRating = result.scoringResult.trust.rating;
-        core.info(`  Trust: ${trustScore}/100 (${trustRating})`);
-      }
-      if (result.scoringResult.availability && result.scoringResult.availability.total !== null) {
-        const availScore = result.scoringResult.availability.total;
-        const availRating = result.scoringResult.availability.rating;
-        core.info(`  Availability: ${availScore}/100 (${availRating})`);
-      }
+
       core.info('');
-      core.info(`🎯 Production Ready: ${result.scoringResult.productionReady ? '✅ YES' : '❌ NO'}`);
+      core.info(`🎯 Production Ready: ${productionReady ? '✅ YES' : '❌ NO'}`);
     } else {
       // No scoring result available
       core.setOutput('compliance-score', 'N/A');
