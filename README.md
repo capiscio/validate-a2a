@@ -2,7 +2,7 @@
 
 > GitHub Action to validate A2A protocol agent cards with three-dimensional scoring, cryptographic verification, and live endpoint testing
 
-Powered by [capiscio-cli](https://github.com/capiscio/capiscio-cli) v2.0.0
+**Powered by [capiscio-core](https://github.com/capiscio/capiscio-core)** - High-performance Go binary (v2.1.2)
 
 ## Features
 
@@ -11,6 +11,7 @@ Powered by [capiscio-cli](https://github.com/capiscio/capiscio-cli) v2.0.0
 ✅ **Live Endpoint Testing** - Real A2A protocol message testing  
 ✅ **Production Readiness** - Clear thresholds for deployment decisions  
 ✅ **Rich Outputs** - Scores, errors, warnings available for downstream steps  
+✅ **Zero Dependencies** - Uses standalone binary, no npm install required
 
 ## Usage
 
@@ -211,10 +212,11 @@ jobs:
 
 ## License
 
-MIT - See [LICENSE](LICENSE) for details
+Apache-2.0 - See [LICENSE](LICENSE) for details
 
 ## Related
 
-- [capiscio-cli](https://github.com/capiscio/capiscio-cli) - The underlying validation CLI
+- [capiscio-core](https://github.com/capiscio/capiscio-core) - The underlying validation engine
+- [capiscio-python](https://github.com/capiscio/capiscio-python) - Python CLI wrapper
 - [A2A Protocol](https://capisc.io) - Learn about the A2A protocol
 - [Web Validator](https://capisc.io/validator) - Browser-based validation tool
