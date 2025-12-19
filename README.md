@@ -2,7 +2,7 @@
 
 > GitHub Action to validate A2A protocol agent cards with three-dimensional scoring, cryptographic verification, and live endpoint testing
 
-**Powered by [capiscio-core](https://github.com/capiscio/capiscio-core)** - High-performance Go binary (v2.1.2)
+**Powered by [capiscio-core](https://github.com/capiscio/capiscio-core)** - High-performance Go binary (v2.2.0)
 
 ## Features
 

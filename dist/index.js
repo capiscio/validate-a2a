@@ -28241,7 +28241,7 @@ const tc = __importStar(__nccwpck_require__(3472));
 const os = __importStar(__nccwpck_require__(857));
 const path = __importStar(__nccwpck_require__(6928));
 const fs = __importStar(__nccwpck_require__(9896));
-const CAPISCIO_VERSION = '1.0.2';
+const CAPISCIO_VERSION = '2.2.0';
 async function setupCapiscio() {
     // Determine OS and Arch
     const platform = os.platform();
