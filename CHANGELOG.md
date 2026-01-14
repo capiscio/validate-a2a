@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [2.3.1] - 2025-01-14
+
+### Changed
+- **CORE VERSION**: Now downloads `capiscio-core` v2.3.1
+
+### Fixed
+- Aligned all version references across package metadata
+
+## [2.3.0] - 2025-01-13
+
+### Changed
+- **CORE VERSION**: Now downloads `capiscio-core` v2.3.0
+- **RFC-002 v1.3**: Badge validation now includes staleness fail-closed behavior
+
+## [2.2.0] - 2025-12-10
+
+### Changed
+- **VERSION ALIGNMENT**: All CapiscIO packages now share the same version number.
+- **CORE VERSION**: Now downloads `capiscio-core` v2.2.0
+
 ## [1.1.0] - 2025-11-21
 
 ### Changed

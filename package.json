@@ -1,6 +1,6 @@
 {
   "name": "validate-a2a",
-  "version": "2.2.0",
+  "version": "2.3.1",
   "description": "GitHub Action to validate A2A protocol agent cards with three-dimensional scoring",
   "main": "dist/index.js",
   "scripts": {
