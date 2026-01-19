@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-01-18
+
+### Changed
+- **CORE VERSION**: Now downloads `capiscio-core` v2.4.0
+
+### Added
+- **PoP Protocol (RFC-003)**: Badge issuance via Proof of Possession for IAL-1 verification
+- **Staleness Fail-Closed**: Badges now fail validation when stale (security hardening)
+- **MCP Service**: Server identity operations support
+
 ## [2.3.1] - 2025-01-14
 
 ### Changed

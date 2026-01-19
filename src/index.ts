@@ -5,7 +5,7 @@ import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
 
-const CAPISCIO_VERSION = '2.2.0';
+const CAPISCIO_VERSION = '2.4.0';
 
 interface ValidationResult {
   success: boolean;
