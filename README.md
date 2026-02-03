@@ -127,7 +127,7 @@ jobs:
 - **Trust ≥60** - Minimum trust level  
 - **Availability ≥80** - Operational stability sufficient
 
-[Learn more about scoring →](https://github.com/capiscio/capiscio-cli/blob/main/docs/scoring-system.md)
+[Learn more about scoring →](https://docs.capisc.io/concepts/scoring/)
 
 ## Examples
 
