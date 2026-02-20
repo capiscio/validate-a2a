@@ -28241,7 +28241,8 @@ const tc = __importStar(__nccwpck_require__(3472));
 const os = __importStar(__nccwpck_require__(857));
 const path = __importStar(__nccwpck_require__(6928));
 const fs = __importStar(__nccwpck_require__(9896));
-const CAPISCIO_VERSION = '2.2.0';
+const validation_1 = __nccwpck_require__(4344);
+const CAPISCIO_VERSION = '2.4.0';
 async function setupCapiscio() {
     // Determine OS and Arch
     const platform = os.platform();
@@ -28288,18 +28289,13 @@ async function run() {
         // Install capiscio-core
         await setupCapiscio();
         // Build command arguments
-        const args = ['validate', agentCard, '--json'];
-        if (strict)
-            args.push('--strict');
-        if (testLive)
-            args.push('--test-live');
-        if (skipSignature)
-            args.push('--skip-signature');
-        if (timeout) {
-            // Ensure timeout has units (default to ms if just a number)
-            const timeoutVal = /^\d+$/.test(timeout) ? `${timeout}ms` : timeout;
-            args.push('--timeout', timeoutVal);
-        }
+        const args = (0, validation_1.buildValidateArgs)({
+            agentCard,
+            strict,
+            testLive,
+            skipSignature,
+            timeout,
+        });
         // Run validation
         let output = '';
         let errorOutput = '';
@@ -28342,26 +28338,11 @@ async function run() {
         core.setOutput('warning-count', (result.warnings?.length || 0).toString());
         // Set scoring outputs (handle undefined gracefully)
         if (result.scoringResult) {
-            // Normalize scores from different versions
-            const complianceScore = result.scoringResult.compliance?.total ?? result.scoringResult.complianceScore ?? 0;
-            const trustScore = result.scoringResult.trust?.total ?? result.scoringResult.trustScore ?? 0;
-            let availabilityScore = 'not-tested';
-            if (result.scoringResult.availability) {
-                if (result.scoringResult.availability.total !== undefined && result.scoringResult.availability.total !== null) {
-                    availabilityScore = result.scoringResult.availability.total;
-                }
-                else if (result.scoringResult.availability.score !== undefined) {
-                    // Check if tested is false
-                    if (result.scoringResult.availability.tested === false) {
-                        availabilityScore = 'not-tested';
-                    }
-                    else {
-                        availabilityScore = result.scoringResult.availability.score;
-                    }
-                }
-            }
-            // Calculate production ready if missing (simple heuristic: compliance >= 80)
-            const productionReady = result.scoringResult.productionReady ?? (complianceScore >= 80);
+            const scores = (0, validation_1.calculateScores)(result);
+            const complianceScore = scores.complianceScore;
+            const trustScore = scores.trustScore;
+            const availabilityScore = scores.availabilityScore;
+            const productionReady = scores.productionReady;
             core.setOutput('compliance-score', complianceScore.toString());
             core.setOutput('trust-score', trustScore.toString());
             core.setOutput('availability-score', availabilityScore.toString());
@@ -28369,22 +28350,13 @@ async function run() {
             // Display scores
             core.info('');
             core.info('📊 Quality Scores:');
-            const getRating = (score) => {
-                if (score >= 90)
-                    return 'Excellent';
-                if (score >= 80)
-                    return 'Good';
-                if (score >= 70)
-                    return 'Fair';
-                return 'Needs Improvement';
-            };
-            const compRating = result.scoringResult.compliance?.rating ?? getRating(complianceScore);
+            const compRating = result.scoringResult.compliance?.rating ?? (0, validation_1.getRating)(complianceScore);
             core.info(`  Compliance: ${complianceScore}/100 (${compRating})`);
-            const trustRating = result.scoringResult.trust?.rating ?? getRating(trustScore);
+            const trustRating = result.scoringResult.trust?.rating ?? (0, validation_1.getRating)(trustScore);
             core.info(`  Trust: ${trustScore}/100 (${trustRating})`);
             if (availabilityScore !== 'not-tested') {
                 const availScoreNum = Number(availabilityScore);
-                const availRating = result.scoringResult.availability?.rating ?? getRating(availScoreNum);
+                const availRating = result.scoringResult.availability?.rating ?? (0, validation_1.getRating)(availScoreNum);
                 core.info(`  Availability: ${availScoreNum}/100 (${availRating})`);
             }
             else {
@@ -28439,6 +28411,71 @@ async function run() {
     }
 }
 run();
+
+
+/***/ }),
+
+/***/ 4344:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.normalizeTimeout = normalizeTimeout;
+exports.buildValidateArgs = buildValidateArgs;
+exports.calculateScores = calculateScores;
+exports.getRating = getRating;
+function normalizeTimeout(timeout) {
+    if (!timeout)
+        return "";
+    return /^\d+$/.test(timeout) ? `${timeout}ms` : timeout;
+}
+function buildValidateArgs(inputs) {
+    const args = ["validate", inputs.agentCard, "--json"];
+    if (inputs.strict)
+        args.push("--strict");
+    if (inputs.testLive)
+        args.push("--test-live");
+    if (inputs.skipSignature)
+        args.push("--skip-signature");
+    if (inputs.timeout) {
+        args.push("--timeout", normalizeTimeout(inputs.timeout));
+    }
+    return args;
+}
+function calculateScores(result) {
+    const scoringResult = result.scoringResult;
+    const complianceScore = scoringResult?.compliance?.total ?? scoringResult?.complianceScore ?? 0;
+    const trustScore = scoringResult?.trust?.total ?? scoringResult?.trustScore ?? 0;
+    let availabilityScore = "not-tested";
+    if (scoringResult?.availability) {
+        if (scoringResult.availability.total !== undefined &&
+            scoringResult.availability.total !== null) {
+            availabilityScore = String(scoringResult.availability.total);
+        }
+        else if (scoringResult.availability.score !== undefined) {
+            availabilityScore = scoringResult.availability.tested === false
+                ? "not-tested"
+                : String(scoringResult.availability.score);
+        }
+    }
+    const productionReady = scoringResult?.productionReady ?? (complianceScore >= 80);
+    return {
+        complianceScore,
+        trustScore,
+        availabilityScore,
+        productionReady,
+    };
+}
+function getRating(score) {
+    if (score >= 90)
+        return "Excellent";
+    if (score >= 80)
+        return "Good";
+    if (score >= 70)
+        return "Fair";
+    return "Needs Improvement";
+}
 
 
 /***/ }),
