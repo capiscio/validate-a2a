@@ -6,7 +6,7 @@
   "scripts": {
     "build": "ncc build src/index.ts -o dist --source-map --license licenses.txt",
     "build:test": "tsc -p tsconfig.test.json",
-    "test": "npm run build:test && node --test tests/**/*.test.js"
+    "test": "npm run build:test && node --test tests/*.test.js"
   },
   "repository": {
     "type": "git",
