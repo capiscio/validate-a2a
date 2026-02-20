@@ -4,31 +4,14 @@ import * as tc from '@actions/tool-cache';
 import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
+import {
+  ValidationResult,
+  buildValidateArgs,
+  calculateScores,
+  getRating,
+} from './validation';
 
 const CAPISCIO_VERSION = '2.4.0';
-
-interface ValidationResult {
-  success: boolean;
-  errors: any[];
-  warnings: any[];
-  scoringResult?: {
-    // Support both legacy and new output formats
-    compliance?: { total: number; rating: string };
-    complianceScore?: number;
-    
-    trust?: { total: number; rating: string };
-    trustScore?: number;
-    
-    availability?: { 
-      total?: number | null; 
-      rating?: string | null;
-      score?: number;
-      tested?: boolean;
-    } | null;
-    
-    productionReady?: boolean;
-  };
-}
 
 async function setupCapiscio(): Promise<string> {
   // Determine OS and Arch
@@ -81,16 +64,13 @@ async function run(): Promise<void> {
     await setupCapiscio();
 
     // Build command arguments
-    const args = ['validate', agentCard, '--json'];
-    
-    if (strict) args.push('--strict');
-    if (testLive) args.push('--test-live');
-    if (skipSignature) args.push('--skip-signature');
-    if (timeout) {
-      // Ensure timeout has units (default to ms if just a number)
-      const timeoutVal = /^\d+$/.test(timeout) ? `${timeout}ms` : timeout;
-      args.push('--timeout', timeoutVal);
-    }
+    const args = buildValidateArgs({
+      agentCard,
+      strict,
+      testLive,
+      skipSignature,
+      timeout,
+    });
 
     // Run validation
     let output = '';
@@ -139,26 +119,11 @@ async function run(): Promise<void> {
 
     // Set scoring outputs (handle undefined gracefully)
     if (result.scoringResult) {
-      // Normalize scores from different versions
-      const complianceScore = result.scoringResult.compliance?.total ?? result.scoringResult.complianceScore ?? 0;
-      const trustScore = result.scoringResult.trust?.total ?? result.scoringResult.trustScore ?? 0;
-      
-      let availabilityScore: number | string = 'not-tested';
-      if (result.scoringResult.availability) {
-        if (result.scoringResult.availability.total !== undefined && result.scoringResult.availability.total !== null) {
-          availabilityScore = result.scoringResult.availability.total;
-        } else if (result.scoringResult.availability.score !== undefined) {
-          // Check if tested is false
-          if (result.scoringResult.availability.tested === false) {
-            availabilityScore = 'not-tested';
-          } else {
-            availabilityScore = result.scoringResult.availability.score;
-          }
-        }
-      }
-
-      // Calculate production ready if missing (simple heuristic: compliance >= 80)
-      const productionReady = result.scoringResult.productionReady ?? (complianceScore >= 80);
+      const scores = calculateScores(result);
+      const complianceScore = scores.complianceScore;
+      const trustScore = scores.trustScore;
+      const availabilityScore = scores.availabilityScore;
+      const productionReady = scores.productionReady;
 
       core.setOutput('compliance-score', complianceScore.toString());
       core.setOutput('trust-score', trustScore.toString());
@@ -169,13 +134,6 @@ async function run(): Promise<void> {
       core.info('');
       core.info('📊 Quality Scores:');
       
-      const getRating = (score: number) => {
-        if (score >= 90) return 'Excellent';
-        if (score >= 80) return 'Good';
-        if (score >= 70) return 'Fair';
-        return 'Needs Improvement';
-      };
-
       const compRating = result.scoringResult.compliance?.rating ?? getRating(complianceScore);
       core.info(`  Compliance: ${complianceScore}/100 (${compRating})`);
 
