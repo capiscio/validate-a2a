@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-03-16
+
+### Changed
+- Extracted validation logic to separate module for maintainability (#6)
+
 ## [2.4.0] - 2026-01-18
 
 ### Changed
