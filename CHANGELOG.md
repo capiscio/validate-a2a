@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-03-27
+
+### Changed
+- Version alignment with capiscio-core v2.6.0
+- Repository-specific copilot instructions (#7)
+
 ## [2.5.0] - 2026-03-16
 
 ### Changed
