@@ -10,8 +10,9 @@ import {
   calculateScores,
   getRating,
 } from './validation';
+import { verifyChecksum } from './checksum';
 
-const CAPISCIO_VERSION = '2.4.0';
+const CAPISCIO_VERSION = '2.6.0';
 
 async function setupCapiscio(): Promise<string> {
   // Determine OS and Arch
@@ -36,7 +37,18 @@ async function setupCapiscio(): Promise<string> {
 
   // Download
   const downloadPath = await tc.downloadTool(downloadUrl);
-  
+
+  // Verify checksum before making executable
+  const requireChecksum = ['1', 'true', 'yes'].includes(
+    (process.env.CAPISCIO_REQUIRE_CHECKSUM ?? '').toLowerCase()
+  );
+  await verifyChecksum(downloadPath, binaryName, {
+    version: CAPISCIO_VERSION,
+    requireChecksum,
+    warn: (msg) => core.warning(msg),
+    info: (msg) => core.info(msg),
+  });
+
   // Rename and make executable
   const binPath = path.join(path.dirname(downloadPath), platform === 'win32' ? 'capiscio.exe' : 'capiscio');
   fs.renameSync(downloadPath, binPath);
