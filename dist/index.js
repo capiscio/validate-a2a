@@ -28196,6 +28196,140 @@ module.exports = {
 
 /***/ }),
 
+/***/ 4596:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.fetchText = fetchText;
+exports.computeSHA256 = computeSHA256;
+exports.verifyChecksum = verifyChecksum;
+exports.parseChecksums = parseChecksums;
+const crypto = __importStar(__nccwpck_require__(6982));
+const fs = __importStar(__nccwpck_require__(9896));
+const https = __importStar(__nccwpck_require__(5692));
+function fetchText(url) {
+    return new Promise((resolve, reject) => {
+        const request = https.get(url, { timeout: 30000 }, (res) => {
+            // Follow redirects (GitHub releases redirect)
+            if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+                fetchText(res.headers.location).then(resolve, reject);
+                return;
+            }
+            if (res.statusCode && res.statusCode >= 400) {
+                reject(new Error(`HTTP ${res.statusCode}`));
+                return;
+            }
+            let data = '';
+            res.on('data', (chunk) => { data += chunk.toString(); });
+            res.on('end', () => resolve(data));
+            res.on('error', reject);
+        });
+        request.on('error', reject);
+        request.on('timeout', () => { request.destroy(); reject(new Error('Request timed out')); });
+    });
+}
+async function computeSHA256(filePath) {
+    return new Promise((resolve, reject) => {
+        const hash = crypto.createHash('sha256');
+        const fileStream = fs.createReadStream(filePath);
+        fileStream.on('data', (chunk) => hash.update(chunk));
+        fileStream.on('end', () => resolve(hash.digest('hex')));
+        fileStream.on('error', reject);
+    });
+}
+async function verifyChecksum(downloadedFile, binaryName, options) {
+    const checksumsUrl = `https://github.com/capiscio/capiscio-core/releases/download/v${options.version}/checksums.txt`;
+    let expectedHash = null;
+    try {
+        const checksumsText = await fetchText(checksumsUrl);
+        const lines = checksumsText.trim().split('\n');
+        for (const line of lines) {
+            const parts = line.trim().split(/\s+/);
+            if (parts.length === 2 && parts[1] === binaryName) {
+                expectedHash = parts[0] ?? null;
+                break;
+            }
+        }
+    }
+    catch {
+        if (options.requireChecksum) {
+            fs.rmSync(downloadedFile, { force: true });
+            throw new Error('Checksum verification required (CAPISCIO_REQUIRE_CHECKSUM=true) ' +
+                'but checksums.txt is not available. Cannot verify binary integrity.');
+        }
+        options.warn('Could not fetch checksums.txt. Skipping integrity verification.');
+        return;
+    }
+    if (!expectedHash) {
+        if (options.requireChecksum) {
+            fs.rmSync(downloadedFile, { force: true });
+            throw new Error(`Checksum verification required (CAPISCIO_REQUIRE_CHECKSUM=true) ` +
+                `but asset ${binaryName} not found in checksums.txt.`);
+        }
+        options.warn(`Asset ${binaryName} not found in checksums.txt. Skipping verification.`);
+        return;
+    }
+    const actualHash = await computeSHA256(downloadedFile);
+    if (actualHash !== expectedHash) {
+        fs.rmSync(downloadedFile, { force: true });
+        throw new Error(`Binary integrity check failed for ${binaryName}. ` +
+            `Expected SHA-256: ${expectedHash}, got: ${actualHash}. ` +
+            'The downloaded file does not match the published checksum.');
+    }
+    options.info(`\u2705 Checksum verified for ${binaryName}`);
+}
+/**
+ * Parse a checksums.txt string and find the hash for a given asset name.
+ */
+function parseChecksums(text, assetName) {
+    const lines = text.trim().split('\n');
+    for (const line of lines) {
+        const parts = line.trim().split(/\s+/);
+        if (parts.length === 2 && parts[1] === assetName) {
+            return parts[0] ?? null;
+        }
+    }
+    return null;
+}
+
+
+/***/ }),
+
 /***/ 9407:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -28242,7 +28376,8 @@ const os = __importStar(__nccwpck_require__(857));
 const path = __importStar(__nccwpck_require__(6928));
 const fs = __importStar(__nccwpck_require__(9896));
 const validation_1 = __nccwpck_require__(4344);
-const CAPISCIO_VERSION = '2.4.0';
+const checksum_1 = __nccwpck_require__(4596);
+const CAPISCIO_VERSION = '2.6.0';
 async function setupCapiscio() {
     // Determine OS and Arch
     const platform = os.platform();
@@ -28268,6 +28403,14 @@ async function setupCapiscio() {
     core.info(`⬇️ Downloading CapiscIO Core v${CAPISCIO_VERSION} from ${downloadUrl}`);
     // Download
     const downloadPath = await tc.downloadTool(downloadUrl);
+    // Verify checksum before making executable
+    const requireChecksum = ['1', 'true', 'yes'].includes((process.env.CAPISCIO_REQUIRE_CHECKSUM ?? '').toLowerCase());
+    await (0, checksum_1.verifyChecksum)(downloadPath, binaryName, {
+        version: CAPISCIO_VERSION,
+        requireChecksum,
+        warn: (msg) => core.warning(msg),
+        info: (msg) => core.info(msg),
+    });
     // Rename and make executable
     const binPath = path.join(path.dirname(downloadPath), platform === 'win32' ? 'capiscio.exe' : 'capiscio');
     fs.renameSync(downloadPath, binPath);
