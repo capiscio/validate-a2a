@@ -2,7 +2,7 @@ export declare function fetchText(url: string): Promise<string>;
 export declare function computeSHA256(filePath: string): Promise<string>;
 export interface ChecksumOptions {
     version: string;
-    requireChecksum: boolean;
+    skipChecksum: boolean;
     warn: (msg: string) => void;
     info: (msg: string) => void;
 }

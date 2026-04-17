@@ -12,7 +12,7 @@ import {
 } from './validation';
 import { verifyChecksum } from './checksum';
 
-const CAPISCIO_VERSION = '2.6.0';
+const CAPISCIO_VERSION = core.getInput('capiscio-version') || '2.6.0';
 
 async function setupCapiscio(): Promise<string> {
   // Determine OS and Arch
@@ -39,12 +39,12 @@ async function setupCapiscio(): Promise<string> {
   const downloadPath = await tc.downloadTool(downloadUrl);
 
   // Verify checksum before making executable
-  const requireChecksum = ['1', 'true', 'yes'].includes(
-    (process.env.CAPISCIO_REQUIRE_CHECKSUM ?? '').toLowerCase()
+  const skipChecksum = ['1', 'true', 'yes'].includes(
+    (process.env.CAPISCIO_SKIP_CHECKSUM ?? '').toLowerCase()
   );
   await verifyChecksum(downloadPath, binaryName, {
     version: CAPISCIO_VERSION,
-    requireChecksum,
+    skipChecksum,
     warn: (msg) => core.warning(msg),
     info: (msg) => core.info(msg),
   });

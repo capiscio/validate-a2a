@@ -28287,22 +28287,22 @@ async function verifyChecksum(downloadedFile, binaryName, options) {
         }
     }
     catch {
-        if (options.requireChecksum) {
-            fs.rmSync(downloadedFile, { force: true });
-            throw new Error('Checksum verification required (CAPISCIO_REQUIRE_CHECKSUM=true) ' +
-                'but checksums.txt is not available. Cannot verify binary integrity.');
+        if (options.skipChecksum) {
+            options.warn('Could not fetch checksums.txt. Skipping integrity verification (CAPISCIO_SKIP_CHECKSUM=true).');
+            return;
         }
-        options.warn('Could not fetch checksums.txt. Skipping integrity verification.');
-        return;
+        fs.rmSync(downloadedFile, { force: true });
+        throw new Error('Checksum verification failed: checksums.txt is not available. ' +
+            'Cannot verify binary integrity. Set CAPISCIO_SKIP_CHECKSUM=true to bypass.');
     }
     if (!expectedHash) {
-        if (options.requireChecksum) {
-            fs.rmSync(downloadedFile, { force: true });
-            throw new Error(`Checksum verification required (CAPISCIO_REQUIRE_CHECKSUM=true) ` +
-                `but asset ${binaryName} not found in checksums.txt.`);
+        if (options.skipChecksum) {
+            options.warn(`Asset ${binaryName} not found in checksums.txt. Skipping verification (CAPISCIO_SKIP_CHECKSUM=true).`);
+            return;
         }
-        options.warn(`Asset ${binaryName} not found in checksums.txt. Skipping verification.`);
-        return;
+        fs.rmSync(downloadedFile, { force: true });
+        throw new Error(`Checksum verification failed: asset ${binaryName} not found in checksums.txt. ` +
+            `Set CAPISCIO_SKIP_CHECKSUM=true to bypass.`);
     }
     const actualHash = await computeSHA256(downloadedFile);
     if (actualHash !== expectedHash) {
@@ -28377,7 +28377,7 @@ const path = __importStar(__nccwpck_require__(6928));
 const fs = __importStar(__nccwpck_require__(9896));
 const validation_1 = __nccwpck_require__(4344);
 const checksum_1 = __nccwpck_require__(4596);
-const CAPISCIO_VERSION = '2.6.0';
+const CAPISCIO_VERSION = core.getInput('capiscio-version') || '2.6.0';
 async function setupCapiscio() {
     // Determine OS and Arch
     const platform = os.platform();
@@ -28404,10 +28404,10 @@ async function setupCapiscio() {
     // Download
     const downloadPath = await tc.downloadTool(downloadUrl);
     // Verify checksum before making executable
-    const requireChecksum = ['1', 'true', 'yes'].includes((process.env.CAPISCIO_REQUIRE_CHECKSUM ?? '').toLowerCase());
+    const skipChecksum = ['1', 'true', 'yes'].includes((process.env.CAPISCIO_SKIP_CHECKSUM ?? '').toLowerCase());
     await (0, checksum_1.verifyChecksum)(downloadPath, binaryName, {
         version: CAPISCIO_VERSION,
-        requireChecksum,
+        skipChecksum,
         warn: (msg) => core.warning(msg),
         info: (msg) => core.info(msg),
     });

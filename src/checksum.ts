@@ -36,7 +36,7 @@ export async function computeSHA256(filePath: string): Promise<string> {
 
 export interface ChecksumOptions {
   version: string;
-  requireChecksum: boolean;
+  skipChecksum: boolean;
   warn: (msg: string) => void;
   info: (msg: string) => void;
 }
@@ -60,27 +60,27 @@ export async function verifyChecksum(
       }
     }
   } catch {
-    if (options.requireChecksum) {
-      fs.rmSync(downloadedFile, { force: true });
-      throw new Error(
-        'Checksum verification required (CAPISCIO_REQUIRE_CHECKSUM=true) ' +
-        'but checksums.txt is not available. Cannot verify binary integrity.'
-      );
+    if (options.skipChecksum) {
+      options.warn('Could not fetch checksums.txt. Skipping integrity verification (CAPISCIO_SKIP_CHECKSUM=true).');
+      return;
     }
-    options.warn('Could not fetch checksums.txt. Skipping integrity verification.');
-    return;
+    fs.rmSync(downloadedFile, { force: true });
+    throw new Error(
+      'Checksum verification failed: checksums.txt is not available. ' +
+      'Cannot verify binary integrity. Set CAPISCIO_SKIP_CHECKSUM=true to bypass.'
+    );
   }
 
   if (!expectedHash) {
-    if (options.requireChecksum) {
-      fs.rmSync(downloadedFile, { force: true });
-      throw new Error(
-        `Checksum verification required (CAPISCIO_REQUIRE_CHECKSUM=true) ` +
-        `but asset ${binaryName} not found in checksums.txt.`
-      );
+    if (options.skipChecksum) {
+      options.warn(`Asset ${binaryName} not found in checksums.txt. Skipping verification (CAPISCIO_SKIP_CHECKSUM=true).`);
+      return;
     }
-    options.warn(`Asset ${binaryName} not found in checksums.txt. Skipping verification.`);
-    return;
+    fs.rmSync(downloadedFile, { force: true });
+    throw new Error(
+      `Checksum verification failed: asset ${binaryName} not found in checksums.txt. ` +
+      `Set CAPISCIO_SKIP_CHECKSUM=true to bypass.`
+    );
   }
 
   const actualHash = await computeSHA256(downloadedFile);
