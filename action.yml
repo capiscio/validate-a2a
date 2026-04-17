@@ -37,6 +37,11 @@ inputs:
     required: false
     default: 'false'
 
+  capiscio-version:
+    description: 'Version of CapiscIO Core to use for validation'
+    required: false
+    default: '2.6.0'
+
 outputs:
   result:
     description: 'Validation result: "passed" or "failed"'
