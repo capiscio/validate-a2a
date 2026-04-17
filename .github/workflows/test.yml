@@ -29,6 +29,9 @@ jobs:
         with:
           agent-card: './test-agent.json'
           # Use local file to avoid network issues in CI
+        env:
+          # No releases currently include checksums.txt — skip verification in CI
+          CAPISCIO_SKIP_CHECKSUM: 'true'
       
       - name: Display outputs
         run: |
