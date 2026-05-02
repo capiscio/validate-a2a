@@ -210,6 +210,18 @@ jobs:
           test-live: true
 ```
 
+## Binary Integrity Verification
+
+This action downloads the capiscio-core binary on first run and verifies its SHA-256 checksum
+against the published `checksums.txt` from the GitHub release.
+
+| Environment Variable | Description | Default |
+|---------------------|-------------|---------|
+| `CAPISCIO_SKIP_CHECKSUM` | Skip binary checksum verification (`true`/`false`) | `false` |
+| `CAPISCIO_CORE_VERSION` | Override the core binary version | Action default |
+
+> **Note:** Setting `CAPISCIO_SKIP_CHECKSUM=true` is not recommended for production workflows.
+
 ## License
 
 Apache-2.0 - See [LICENSE](LICENSE) for details
