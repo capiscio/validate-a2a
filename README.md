@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Validate A2A Agent Card
-        uses: capiscio/validate-a2a@v1
+        uses: capiscio/validate-a2a@v2
         with:
           agent-card: './agent-card.json'
 ```
@@ -37,7 +37,7 @@ jobs:
 
 ```yaml
 - name: Validate for Production
-  uses: capiscio/validate-a2a@v1
+  uses: capiscio/validate-a2a@v2
   with:
     agent-card: './agent-card.json'
     strict: true
@@ -49,7 +49,7 @@ jobs:
 ```yaml
 - name: Validate Agent Card
   id: validate
-  uses: capiscio/validate-a2a@v1
+  uses: capiscio/validate-a2a@v2
   with:
     agent-card: './agent-card.json'
 
@@ -65,7 +65,7 @@ jobs:
 
 ```yaml
 - name: Validate Remote Agent
-  uses: capiscio/validate-a2a@v1
+  uses: capiscio/validate-a2a@v2
   with:
     agent-card: 'https://example.com/agent-card.json'
     test-live: true
@@ -75,7 +75,7 @@ jobs:
 
 ```yaml
 - name: Comprehensive Validation
-  uses: capiscio/validate-a2a@v1
+  uses: capiscio/validate-a2a@v2
   with:
     agent-card: './agent-card.json'
     strict: true
@@ -144,7 +144,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Validate Deployed Agent
-        uses: capiscio/validate-a2a@v1
+        uses: capiscio/validate-a2a@v2
         with:
           agent-card: ${{ secrets.DEPLOYED_AGENT_URL }}
           strict: true
@@ -165,7 +165,7 @@ jobs:
       
       - name: Validate Agent Card
         id: validate
-        uses: capiscio/validate-a2a@v1
+        uses: capiscio/validate-a2a@v2
         with:
           agent-card: './agent-card.json'
       
@@ -203,7 +203,7 @@ jobs:
         environment: [dev, staging, prod]
     steps:
       - name: Validate ${{ matrix.environment }}
-        uses: capiscio/validate-a2a@v1
+        uses: capiscio/validate-a2a@v2
         with:
           agent-card: https://api-${{ matrix.environment }}.example.com/agent-card.json
           strict: ${{ matrix.environment == 'prod' }}

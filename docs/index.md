@@ -8,7 +8,7 @@ Add the following step to your GitHub Actions workflow:
 
 ```yaml
 - name: Validate Agent Card
-  uses: capiscio/validate-a2a@v1
+  uses: capiscio/validate-a2a@v2
   with:
     agent-card: './agent-card.json'
     strict: 'true'
@@ -55,7 +55,7 @@ jobs:
       
       - name: Validate Agent Card
         id: validation
-        uses: capiscio/validate-a2a@v1
+        uses: capiscio/validate-a2a@v2
         with:
           agent-card: './agent.json'
           strict: 'true'
