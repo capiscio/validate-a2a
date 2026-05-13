@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-05-13
+
+### Changed
+- Pin default capiscio-core version to 2.7.0
+
+### Fixed
+- Checksum fail-closed and version override (#11)
+- Binary checksum verification (#10)
+
 ## [2.6.0] - 2026-03-27
 
 ### Changed

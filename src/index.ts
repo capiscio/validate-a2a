@@ -12,7 +12,7 @@ import {
 } from './validation';
 import { verifyChecksum } from './checksum';
 
-const CAPISCIO_VERSION = core.getInput('capiscio-version') || '2.6.0';
+const CAPISCIO_VERSION = core.getInput('capiscio-version') || '2.7.0';
 
 async function setupCapiscio(): Promise<string> {
   // Determine OS and Arch
